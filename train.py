@@ -34,7 +34,7 @@ class Agent():
         self.t = 0
 
     def train(self):
-        for _ in tqdm(range(self.config.num_episodes), desc="Episode"):
+        for i in tqdm(range(self.config.num_episodes), desc="Episode"):
             total_reward = 0
             obs, _ = env.reset()
             done = False
@@ -82,10 +82,11 @@ class Agent():
         q_a = torch.gather(q, 1, actions.unsqueeze(dim=1)).squeeze(dim=1)
 
         loss = nn.MSELoss()(q_a, targets)
-        optimizer = torch.optim.Adam(
+        optimizer = torch.optim.RMSprop(
             params=self.policy_model.parameters(),
             lr=self.lr,
-            # betas=(0.9, 0.9),
+            alpha=0.9,
+            eps=0.1,
         )
         optimizer.zero_grad()
         loss.backward()
