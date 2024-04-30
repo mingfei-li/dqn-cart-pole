@@ -64,7 +64,7 @@ class Agent():
                 obs = new_obs
                 self.t += 1
 
-            self.logger.add_scalar("total_reward", total_reward)
+            self.logger.add_scalar("1.total_reward", total_reward)
             self.logger.flush(self.t)
 
     def train_step(self):
@@ -102,8 +102,8 @@ class Agent():
             param_norm = p.grad.data.norm(2)
             grad_norm += param_norm.item() ** 2
         grad_norm = grad_norm ** 0.5
-        self.logger.add_scalar("grad_norm", grad_norm)
-        self.logger.add_scalar("loss", loss.item())
+        self.logger.add_scalar("2.grad_norm", grad_norm)
+        self.logger.add_scalar("3.loss", loss.item())
         
     def sample(self):
         states = []
