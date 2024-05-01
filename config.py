@@ -1,7 +1,7 @@
 class Config():
     num_episodes_train = 2000
-    max_eps = 0.05
-    min_eps = 0.05
+    max_eps = 0.5
+    min_eps = 0.5
     n_eps = 50_000
     max_lr = 5e-4
     min_lr = 5e-4
@@ -12,4 +12,4 @@ class Config():
     learning_start = 10_000
     buffer_size = 50_000
     grad_clip = 1e4
-    exp_id = "vanilla"
+    exp_id = "high-exploration"

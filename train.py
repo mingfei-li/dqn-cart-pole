@@ -158,7 +158,7 @@ if __name__ == "__main__":
     for i in range(5):
         env = gym.make('CartPole-v0', render_mode="rgb_array")
         config = Config()
-        run_id = f"{datetime.now().strftime('%Y%m%d-%H%M%S')}-{i}"
+        run_id = f"{datetime.now().strftime('%Y%m%d-%H%M%S')}/{i}"
 
         agent = Agent(env, config, run_id)
 
