@@ -95,10 +95,10 @@ class Agent():
         )
         optimizer.zero_grad()
         loss.backward()
-        # nn.utils.clip_grad_norm_(
-        #     self.policy_model.parameters(),
-        #     max_norm=self.config.grad_clip,
-        # )
+        nn.utils.clip_grad_norm_(
+            self.policy_model.parameters(),
+            max_norm=self.config.grad_clip,
+        )
         optimizer.step()
 
         if self.t % self.config.target_update_freq == 0:
@@ -155,10 +155,11 @@ class Agent():
 
 
 if __name__ == "__main__":
+    date_time = datetime.now().strftime('%Y%m%d-%H%M%S')
     for i in range(5):
         env = gym.make('CartPole-v0', render_mode="rgb_array")
         config = Config()
-        run_id = f"{datetime.now().strftime('%Y%m%d-%H%M%S')}/{i}"
+        run_id = f"{date_time}/{i}"
 
         agent = Agent(env, config, run_id)
 
