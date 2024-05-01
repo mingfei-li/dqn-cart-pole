@@ -3,9 +3,9 @@ from torch.utils.tensorboard import SummaryWriter
 from statistics import mean
 
 class Logger():
-    def __init__(self):
+    def __init__(self, run_id):
         self.scalar_buffer = {}
-        self.writer = SummaryWriter(log_dir="results/logs")
+        self.writer = SummaryWriter(log_dir=f"results/logs/{run_id}")
 
     def add_scalar(self, key, value):
         if key not in self.scalar_buffer.keys():

@@ -1,5 +1,6 @@
 from config import Config
 from collections import deque
+from datetime import datetime
 from gymnasium.experimental.wrappers import RecordVideoV0
 from mlp_model import MLPModel
 from logger import Logger
@@ -11,9 +12,10 @@ import torch.nn as nn
 from tqdm import tqdm
 
 class Agent():
-    def __init__(self, env, config: Config):
+    def __init__(self, env, config: Config, run_id):
         self.env = env
         self.config = config
+        self.run_id = run_id
         self.eps = config.max_eps
         self.eps_step = (config.max_eps - config.min_eps) / config.n_eps
         self.lr = config.max_lr
@@ -30,11 +32,11 @@ class Agent():
         self.target_model.load_state_dict(self.policy_model.state_dict())
 
         self.replay_buffer = deque(maxlen=config.buffer_size)
-        self.logger = Logger()
+        self.logger = Logger(run_id)
         self.t = 0
 
     def train(self):
-        for i in tqdm(range(self.config.num_episodes), desc="Episode"):
+        for i in tqdm(range(self.config.num_episodes), desc=f"Run {self.run_id}, Episode"):
             total_reward = 0
             obs, _ = env.reset()
             done = False
@@ -64,7 +66,7 @@ class Agent():
                 obs = new_obs
                 self.t += 1
 
-            self.logger.add_scalar("1.total_reward", total_reward)
+            self.logger.add_scalar("total_reward", total_reward)
             self.logger.flush(self.t)
 
     def train_step(self):
@@ -102,8 +104,8 @@ class Agent():
             param_norm = p.grad.data.norm(2)
             grad_norm += param_norm.item() ** 2
         grad_norm = grad_norm ** 0.5
-        self.logger.add_scalar("2.grad_norm", grad_norm)
-        self.logger.add_scalar("3.loss", loss.item())
+        self.logger.add_scalar("grad_norm", grad_norm)
+        self.logger.add_scalar("loss", loss.item())
         
     def sample(self):
         states = []
@@ -130,11 +132,15 @@ class Agent():
         ]
 
 if __name__ == "__main__":
-    env = gym.make('CartPole-v0', render_mode="rgb_array")
-    env = RecordVideoV0(
-        env,
-        video_folder="results/videos",
-        step_trigger=lambda t: t % 10000 == 0,
-    )
-    agent = Agent(env, Config())
-    agent.train()
+    for i in range(5):
+        exp_name = "vanilla"
+        run_id = f"{exp_name}-{datetime.now().isoformat(timespec='seconds')}-{i}"
+        env = gym.make('CartPole-v0', render_mode="rgb_array")
+        env = RecordVideoV0(
+            env,
+            video_folder=f"results/videos/{run_id}",
+            step_trigger=lambda t: t % 10000 == 0,
+        )
+        agent = Agent(env, Config(), run_id)
+        agent.train()
+        env.close()
