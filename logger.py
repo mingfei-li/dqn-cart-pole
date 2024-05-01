@@ -3,13 +3,18 @@ from torch.utils.tensorboard import SummaryWriter
 from statistics import mean
 
 class Logger():
-    def __init__(self, run_id):
+    def __init__(self, log_dir):
         self.scalar_buffer = {}
-        self.writer = SummaryWriter(log_dir=f"results/logs/{run_id}")
+        self.writer = SummaryWriter(log_dir=f"{log_dir}")
 
-    def add_scalar(self, key, value):
+    def add_step_stats(self, key, value):
         if key not in self.scalar_buffer.keys():
             self.scalar_buffer[key] = deque(maxlen=200)
+        self.scalar_buffer[key].append(value)
+
+    def add_episode_stats(self, key, value):
+        if key not in self.scalar_buffer.keys():
+            self.scalar_buffer[key] = deque(maxlen=50)
         self.scalar_buffer[key].append(value)
     
     def flush(self, t):
