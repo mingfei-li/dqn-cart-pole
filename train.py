@@ -169,7 +169,7 @@ if __name__ == "__main__":
             agent.train()
             reward = agent.test()
 
-            if reward > max_reward:
+            if reward >= max_reward:
                 max_reward = reward
                 agent.save_model(f"model-{reward}.pt")
 
