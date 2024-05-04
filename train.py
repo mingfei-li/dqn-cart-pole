@@ -1,15 +1,13 @@
-from config import Config
 from collections import deque
-from datetime import datetime
-from gymnasium.experimental.wrappers import RecordVideoV0
-from mlp_model import MLPModel
+from config import Config
 from logger import Logger
+from mlp_model import MLPModel
+from tqdm import tqdm
 import gymnasium as gym
-import numpy as np
 import random
 import torch
 import torch.nn as nn
-from tqdm import tqdm
+import os
 
 class Agent():
     def __init__(self, env, config: Config, run_id):
@@ -45,7 +43,9 @@ class Agent():
         obs, _ = self.env.reset()
         done = False
         while not done:
-            if random.random() < self.eps or self.t < self.config.learning_start:
+            if (random.random() < self.eps or 
+                self.t < self.config.learning_start):
+
                 action = self.env.action_space.sample()
             else:
                 self.policy_model.eval()
@@ -95,10 +95,6 @@ class Agent():
         )
         optimizer.zero_grad()
         loss.backward()
-        nn.utils.clip_grad_norm_(
-            self.policy_model.parameters(),
-            max_norm=self.config.grad_clip,
-        )
         optimizer.step()
 
         if self.t % self.config.target_update_freq == 0:
@@ -152,19 +148,29 @@ class Agent():
             total_reward += reward
         self.testing_logger.add_episode_stats("testing_reward", total_reward)
         self.testing_logger.flush(self.t)
+        return total_reward
 
+    def save_model(self, model_name):
+        path = f"results/models/{self.config.exp_id}/{self.run_id}"
+        if not os.path.exists(path):
+            os.makedirs(path)
+
+        self.policy_model.eval()
+        torch.save(self.policy_model.state_dict(), f"{path}/{model_name}")
 
 if __name__ == "__main__":
-    date_time = datetime.now().strftime('%Y%m%d-%H%M%S')
-    for i in range(5):
+    for run_id in range(5):
         env = gym.make('CartPole-v0', render_mode="rgb_array")
         config = Config()
-        run_id = f"{date_time}/{i}"
-
         agent = Agent(env, config, run_id)
 
+        max_reward = 0
         for i in tqdm(range(config.num_episodes_train), desc=f"Run {run_id}"):
             agent.train()
-            agent.test()
+            reward = agent.test()
+
+            if reward > max_reward:
+                max_reward = reward
+                agent.save_model(f"model-{reward}.pt")
 
         env.close()
