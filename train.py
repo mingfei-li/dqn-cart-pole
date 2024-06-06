@@ -16,8 +16,6 @@ class Agent():
         self.run_id = run_id
         self.eps = config.max_eps
         self.eps_step = (config.max_eps - config.min_eps) / config.n_eps
-        self.lr = config.max_lr
-        self.lr_step = (config.max_lr - config.min_lr) / config.n_lr
 
         self.policy_model = MLPModel(
             in_features=self.env.observation_space.shape[0],
@@ -28,6 +26,17 @@ class Agent():
             out_features=self.env.action_space.n,
         )
         self.target_model.load_state_dict(self.policy_model.state_dict())
+
+        self.optimizer = torch.optim.Adam(
+            params=self.policy_model.parameters(),
+            lr=config.max_lr,
+        )
+        self.lr_scheduler = torch.optim.lr_scheduler.LinearLR(
+            self.optimizer,
+            start_factor=1.0,
+            end_factor=config.min_lr/config.max_lr,
+            total_iters=config.n_lr,
+        )
 
         self.replay_buffer = deque(maxlen=config.buffer_size)
 
@@ -63,9 +72,8 @@ class Agent():
                 self.train_step()
 
             self.eps = max(self.eps - self.eps_step, self.config.min_eps)
-            self.lr = max(self.lr - self.lr_step, self.config.min_lr)
             self.training_logger.add_step_stats("eps", self.eps)
-            self.training_logger.add_step_stats("lr", self.lr)
+            self.training_logger.add_step_stats("lr", self.lr_scheduler.get_last_lr()[0])
 
             total_reward += reward
             obs = new_obs
@@ -89,13 +97,10 @@ class Agent():
         q_a = torch.gather(q, 1, actions.unsqueeze(dim=1)).squeeze(dim=1)
 
         loss = nn.MSELoss()(q_a, targets)
-        optimizer = torch.optim.Adam(
-            params=self.policy_model.parameters(),
-            lr=self.lr,
-        )
-        optimizer.zero_grad()
+
+        self.optimizer.zero_grad()
         loss.backward()
-        optimizer.step()
+        self.optimizer.step()
 
         if self.t % self.config.target_update_freq == 0:
             self.target_model.load_state_dict(self.policy_model.state_dict())
